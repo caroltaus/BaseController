@@ -13,7 +13,7 @@ class GameScene: SKScene, JoystickDelegate {
 
     var animal = SKSpriteNode(imageNamed: "parrot")
     let initialPosition = CGPoint(x: 100, y: 100)
-    let multiplier: CGFloat = 10.0
+    let multiplier: CGFloat = 4000
     let joystickController: JoystickController = JoystickController()
     var lastActionTime: TimeInterval = TimeInterval.zero
     let whaitForNextAction: Double = 1
@@ -27,39 +27,53 @@ class GameScene: SKScene, JoystickDelegate {
     func setUpScene() {
         joystickController.delegate = self
         joystickController.observeForGameControllers()
+        physicsWorld.gravity = .zero
         
         createAnimal()
     }
     
     func createAnimal() {
         let animalName = ["parrot", "bear", "buffalo", "chick"]
-        let index = Int.random(in: 0..<animalName.count)
-        
-        animal.removeFromParent()
-        animal = SKSpriteNode(imageNamed: animalName[index])
-        animal.position = initialPosition
-        
-        self.addChild(animal)
+                let index = Int.random(in: 0..<animalName.count)
+                
+                animal.removeFromParent()
+                animal = SKSpriteNode(imageNamed: animalName[index])
+                animal.position = initialPosition
+                
+                let physicsBody = SKPhysicsBody(circleOfRadius: 100)
+                physicsBody.mass = 1
+                
+                animal.physicsBody = physicsBody
+                
+                self.addChild(animal)
     }
     
     func moveAnimal(dx: CGFloat, dy: CGFloat) {
-        var xValue = animal.position.x + dx * multiplier
-        var yValue = animal.position.y + dy * multiplier
-        
-        if xValue > self.size.width {
-            xValue = 0
+        var xValue = dx * multiplier
+        var yValue = dy * multiplier
+        let resultSpeed = sqrt(pow(animal.physicsBody!.velocity.dx, 2) + pow(animal.physicsBody!.velocity.dy, 2))
+//        if xValue > self.size.width {
+//            xValue = 0
+//        }
+//        if xValue < 0 {
+//            xValue = self.size.width
+//        }
+//        if yValue > self.size.height {
+//            yValue = 0
+//        }
+//        if yValue < 0 {
+//            yValue = self.size.height
+//        }
+//
+        //animal.position = CGPoint(x: xValue, y: yValue)
+        if resultSpeed < 400 {
+            animal.physicsBody?.applyForce(CGVector(dx: xValue, dy: yValue))
         }
-        if xValue < 0 {
-            xValue = self.size.width
-        }
-        if yValue > self.size.height {
-            yValue = 0
-        }
-        if yValue < 0 {
-            yValue = self.size.height
-        }
-        
-        animal.position = CGPoint(x: xValue, y: yValue)
+    }
+    
+    func applyDragAnimal() {
+        animal.physicsBody?.applyForce(CGVector(dx: animal.physicsBody!.velocity.dx * -6, dy: animal.physicsBody!.velocity.dy * -6))
+       
     }
     
     func resetAnimal() {
@@ -69,6 +83,8 @@ class GameScene: SKScene, JoystickDelegate {
     
     override func update(_ currentTime: TimeInterval) {
         joystickController.update(currentTime)
+        applyDragAnimal()
+        print(animal.physicsBody?.velocity)
     }
     
     #if os(watchOS)
@@ -146,10 +162,11 @@ class GameScene: SKScene, JoystickDelegate {
     
     func joystickUpdate(_ currentTime: TimeInterval){
         if let gamePadLeft = joystickController.gamePadLeft {
+            let dx: CGFloat = CGFloat(gamePadLeft.xAxis.value)
+            let dy: CGFloat = CGFloat(gamePadLeft.yAxis.value)
             if gamePadLeft.xAxis.value != 0 || gamePadLeft.xAxis.value != 0{
-                let dx: CGFloat = CGFloat(gamePadLeft.xAxis.value)
-                let dy: CGFloat = CGFloat(gamePadLeft.yAxis.value)
-                // print("dpad: \(dx), \(dy)")
+                
+                //print("dpad: \(dx), \(dy)")
                 moveAnimal(dx: dx, dy: dy)
             }
         }
